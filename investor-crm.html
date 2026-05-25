@@ -1476,7 +1476,7 @@ async function extractCard() {
     const base64 = scanImageData.split(',')[1];
     const mediaType = scanImageData.split(';')[0].split(':')[1];
     const payload = {
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1000,
       messages: [{
         role: 'user',
