@@ -237,6 +237,17 @@
   .login-box .login-error { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 18px; }
   .login-box .login-divider { width: 60px; height: 1px; background: var(--border2); margin: 28px auto; }
 
+  /* BROADCAST */
+  .channel-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:8px; border:1px solid var(--border2); color:var(--text2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.15s; background:var(--surface2); }
+  .channel-btn:hover { border-color:var(--gold); color:var(--gold); }
+  .channel-btn.active { background:var(--gold-dim); border-color:var(--gold); color:var(--gold); }
+  .template-btn { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:6px; border:1px solid var(--border2); color:var(--text2); cursor:pointer; font-size:12px; background:var(--surface2); transition:all 0.15s; }
+  .template-btn:hover { border-color:var(--gold); color:var(--gold); }
+  .recipient-item { display:flex; align-items:center; gap:8px; padding:5px 0; font-size:12px; color:var(--text2); border-bottom:1px solid var(--border); }
+  .recipient-item:last-child { border-bottom:none; }
+  .recipient-item .ri-name { font-weight:500; color:var(--text); min-width:140px; }
+  .recipient-item .ri-contact { color:var(--text3); }
+
   scrollbar-width: thin;
   scrollbar-color: var(--border2) transparent;
 </style>
@@ -283,6 +294,9 @@
       </div>
       <div class="nav-item" onclick="showPage('schedule')">
         <span class="icon">🗓️</span> 30-Day Schedule
+      </div>
+      <div class="nav-item" onclick="showPage('broadcast')">
+        <span class="icon">📣</span> Broadcast
       </div>
       <div class="nav-section">System</div>
       <div class="nav-item" onclick="showPage('settings')">
@@ -497,6 +511,75 @@
         <h3>⚠️ Danger Zone</h3>
         <p>Permanently delete all investor data. This cannot be undone.</p>
         <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+      </div>
+    </div>
+
+    <!-- BROADCAST -->
+    <div id="page-broadcast" class="page">
+      <div class="page-header">
+        <div><h2>Broadcast</h2><p>Send mass messages to your investors via SMS, Email, or Instagram</p></div>
+      </div>
+
+      <!-- RECIPIENT SELECTOR -->
+      <div class="dash-section">
+        <div class="dash-section-title">1. Select Recipients</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+          <label class="deal-check selected" onclick="toggleTypeFilter(this,'Investor')"><input type="checkbox" value="Investor" checked> Investors</label>
+          <label class="deal-check selected" onclick="toggleTypeFilter(this,'Sponsor')"><input type="checkbox" value="Sponsor" checked> Sponsors</label>
+          <label class="deal-check selected" onclick="toggleTypeFilter(this,'Operator')"><input type="checkbox" value="Operator" checked> Operators</label>
+          <label class="deal-check selected" onclick="toggleTypeFilter(this,'')"><input type="checkbox" value="" checked> Unassigned</label>
+        </div>
+        <div id="recipientSummary" style="font-size:13px;color:var(--text2);margin-bottom:12px;"></div>
+        <div id="recipientList" style="max-height:200px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;"></div>
+      </div>
+
+      <!-- CHANNEL SELECTOR -->
+      <div class="dash-section">
+        <div class="dash-section-title">2. Choose Channel</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div class="channel-btn active" id="ch-sms" onclick="selectChannel('sms')">📱 SMS</div>
+          <div class="channel-btn" id="ch-email" onclick="selectChannel('email')">✉️ Email</div>
+          <div class="channel-btn" id="ch-instagram" onclick="selectChannel('instagram')">📸 Instagram</div>
+        </div>
+      </div>
+
+      <!-- MESSAGE COMPOSER -->
+      <div class="dash-section">
+        <div class="dash-section-title">3. Compose Message</div>
+
+        <!-- Templates -->
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px;">Saved Templates</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="templateBtns"></div>
+          <button class="btn btn-outline btn-sm" onclick="saveTemplate()">💾 Save Current as Template</button>
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label id="subjectLabel" style="font-size:12px;color:var(--text2);">Subject (Email only)</label>
+          <input type="text" id="broadcastSubject" placeholder="e.g. New Deal Opportunity — Class B Multifamily">
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:12px;color:var(--text2);">Message</label>
+          <textarea id="broadcastMessage" style="min-height:140px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:vertical;width:100%;" placeholder="Type your message here..." oninput="updateCharCount()"></textarea>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px;text-align:right;" id="charCount">0 characters</div>
+        </div>
+
+        <!-- Instagram tip -->
+        <div id="instagramTip" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:12px;font-size:13px;color:var(--text2);">
+          💡 Instagram does not allow bulk DMs from third-party apps. Click <strong>Copy Message</strong> below, then open Instagram and paste it manually into each DM.
+        </div>
+      </div>
+
+      <!-- SEND -->
+      <div class="dash-section">
+        <div class="dash-section-title">4. Send</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-gold" id="sendBroadcastBtn" onclick="sendBroadcast()">🚀 Send Broadcast</button>
+          <button class="btn btn-outline" onclick="copyMessage()">📋 Copy Message</button>
+          <button class="btn btn-ghost" onclick="clearBroadcast()">Clear</button>
+        </div>
+        <div id="broadcastStatus" style="margin-top:14px;font-size:13px;color:var(--text2);"></div>
       </div>
     </div>
 
@@ -1588,6 +1671,7 @@ function showPage(page) {
   if (page==='today') renderToday();
   if (page==='schedule') renderSchedule();
   if (page==='dashboard') renderDashboard();
+  if (page==='broadcast') initBroadcast();
 }
 
 function switchTab(el, targetId) {
@@ -1672,6 +1756,179 @@ function checkAuth() {
   } else {
     document.getElementById('loginPassword').focus();
   }
+}
+
+// ==================== BROADCAST ====================
+let broadcastChannel = 'sms';
+let broadcastTypeFilters = ['Investor','Sponsor','Operator',''];
+let messageTemplates = [];
+
+function initBroadcast() {
+  messageTemplates = JSON.parse(localStorage.getItem('icrm_templates') || '[]');
+  renderRecipients();
+  renderTemplates();
+  updateSubjectVisibility();
+  document.getElementById('subjectLabel').style.display = 'none';
+  document.getElementById('broadcastSubject').style.display = 'none';
+}
+
+function toggleTypeFilter(el, type) {
+  el.classList.toggle('selected');
+  if (broadcastTypeFilters.includes(type)) {
+    broadcastTypeFilters = broadcastTypeFilters.filter(t => t !== type);
+  } else {
+    broadcastTypeFilters.push(type);
+  }
+  renderRecipients();
+}
+
+function getBroadcastRecipients() {
+  return investors.filter(inv => broadcastTypeFilters.includes(inv.personType || ''));
+}
+
+function renderRecipients() {
+  const list = getBroadcastRecipients();
+  const el = document.getElementById('recipientList');
+  const summary = document.getElementById('recipientSummary');
+  const smsCount = list.filter(i => i.cell).length;
+  const emailCount = list.filter(i => i.email).length;
+  summary.innerHTML = `<strong style="color:var(--text)">${list.length}</strong> recipients selected &nbsp;·&nbsp; <span style="color:var(--green)">${smsCount} have phone numbers</span> &nbsp;·&nbsp; <span style="color:var(--blue)">${emailCount} have emails</span>`;
+  if (list.length === 0) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;">No recipients match your selection.</div>';
+    return;
+  }
+  el.innerHTML = list.map(inv => `
+    <div class="recipient-item">
+      <div class="ri-name">${inv.firstName} ${inv.lastName}</div>
+      <span class="badge badge-${(inv.personType||'investor').toLowerCase()}" style="font-size:10px;padding:2px 7px;">${inv.personType||'—'}</span>
+      <div class="ri-contact">${inv.cell || inv.email || 'No contact info'}</div>
+    </div>`).join('');
+}
+
+function selectChannel(ch) {
+  broadcastChannel = ch;
+  ['sms','email','instagram'].forEach(c => {
+    document.getElementById('ch-'+c).classList.toggle('active', c === ch);
+  });
+  updateSubjectVisibility();
+  document.getElementById('instagramTip').style.display = ch === 'instagram' ? 'block' : 'none';
+  const btn = document.getElementById('sendBroadcastBtn');
+  btn.textContent = ch === 'sms' ? '🚀 Send SMS Broadcast' : ch === 'email' ? '✉️ Open in Gmail' : '📋 Copy for Instagram';
+}
+
+function updateSubjectVisibility() {
+  const show = broadcastChannel === 'email';
+  document.getElementById('subjectLabel').style.display = show ? 'block' : 'none';
+  document.getElementById('broadcastSubject').style.display = show ? 'block' : 'none';
+}
+
+function updateCharCount() {
+  const len = document.getElementById('broadcastMessage').value.length;
+  const el = document.getElementById('charCount');
+  el.textContent = len + ' characters' + (broadcastChannel === 'sms' ? ' (' + Math.ceil(len/160) + ' SMS segment' + (Math.ceil(len/160) > 1 ? 's' : '') + ')' : '');
+}
+
+function renderTemplates() {
+  const el = document.getElementById('templateBtns');
+  const defaults = [
+    { name: 'New Deal', text: 'Hi [First Name], I wanted to share an exciting new investment opportunity with you. We have a new deal that aligns with your investment goals. Would you be open to a quick call this week?' },
+    { name: 'Quarterly Update', text: 'Hi [First Name], I wanted to reach out with a quick update on our portfolio performance this quarter. Things are looking strong and I have some exciting news to share. Can we connect soon?' },
+    { name: 'Event Invite', text: 'Hi [First Name], I would love to invite you to an upcoming investor event we are hosting. It is a great opportunity to connect and learn about upcoming deals. Are you available?' },
+    { name: 'Check In', text: 'Hi [First Name], just reaching out to check in and see how things are going. I have been thinking about you and wanted to stay in touch. Hope all is well!' },
+  ];
+  const all = [...defaults, ...messageTemplates];
+  el.innerHTML = all.map((t,i) => `
+    <span class="template-btn" onclick="loadTemplate(${i})">
+      ${t.name}
+      ${i >= defaults.length ? `<span onclick="deleteTemplate(${i - defaults.length},event)" style="color:var(--red);margin-left:4px;">✕</span>` : ''}
+    </span>`).join('');
+  window._allTemplates = all;
+}
+
+function loadTemplate(i) {
+  document.getElementById('broadcastMessage').value = window._allTemplates[i].text;
+  updateCharCount();
+}
+
+function saveTemplate() {
+  const msg = document.getElementById('broadcastMessage').value.trim();
+  if (!msg) { showToast('Write a message first','error'); return; }
+  const name = prompt('Template name:');
+  if (!name) return;
+  messageTemplates.push({ name, text: msg });
+  localStorage.setItem('icrm_templates', JSON.stringify(messageTemplates));
+  renderTemplates();
+  showToast('Template saved','success');
+}
+
+function deleteTemplate(i, e) {
+  e.stopPropagation();
+  messageTemplates.splice(i, 1);
+  localStorage.setItem('icrm_templates', JSON.stringify(messageTemplates));
+  renderTemplates();
+}
+
+async function sendBroadcast() {
+  const msg = document.getElementById('broadcastMessage').value.trim();
+  if (!msg) { showToast('Please write a message first','error'); return; }
+  const recipients = getBroadcastRecipients();
+  if (recipients.length === 0) { showToast('No recipients selected','error'); return; }
+
+  if (broadcastChannel === 'sms') {
+    const { twilioSid, twilioToken, twilioFrom } = settings;
+    if (!twilioSid || !twilioToken || !twilioFrom) {
+      showToast('Complete Twilio setup in Settings first','error'); return;
+    }
+    const withPhone = recipients.filter(i => i.cell);
+    if (withPhone.length === 0) { showToast('No recipients have phone numbers','error'); return; }
+    const status = document.getElementById('broadcastStatus');
+    status.textContent = `Sending to ${withPhone.length} recipients...`;
+    let sent = 0, failed = 0;
+    for (const inv of withPhone) {
+      const personalMsg = msg.replace(/\[First Name\]/gi, inv.firstName);
+      try {
+        const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + btoa(twilioSid + ':' + twilioToken),
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({ To: inv.cell, From: twilioFrom, Body: personalMsg })
+        });
+        if (res.ok) sent++; else failed++;
+      } catch(e) { failed++; }
+      status.textContent = `Sending... ${sent + failed} of ${withPhone.length}`;
+    }
+    status.innerHTML = `<span style="color:var(--green)">✓ Sent ${sent}</span>${failed > 0 ? ` &nbsp;<span style="color:var(--red)">✗ Failed ${failed}</span>` : ''}`;
+    showToast(`SMS sent to ${sent} investors`, 'success');
+
+  } else if (broadcastChannel === 'email') {
+    const withEmail = recipients.filter(i => i.email);
+    if (withEmail.length === 0) { showToast('No recipients have email addresses','error'); return; }
+    const subject = document.getElementById('broadcastSubject').value || 'Message from MVH Capital';
+    const bcc = withEmail.map(i => i.email).join(',');
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(bcc)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+    window.open(gmailUrl, '_blank');
+    document.getElementById('broadcastStatus').innerHTML = `<span style="color:var(--green)">✓ Opened Gmail with ${withEmail.length} recipients in BCC</span>`;
+    showToast('Gmail opened with recipients pre-filled','success');
+
+  } else if (broadcastChannel === 'instagram') {
+    copyMessage();
+    document.getElementById('broadcastStatus').innerHTML = `<span style="color:var(--blue)">✓ Message copied — paste it into Instagram DMs</span>`;
+  }
+}
+
+function copyMessage() {
+  const msg = document.getElementById('broadcastMessage').value;
+  if (!msg) { showToast('No message to copy','error'); return; }
+  navigator.clipboard.writeText(msg).then(() => showToast('Message copied to clipboard','success'));
+}
+
+function clearBroadcast() {
+  document.getElementById('broadcastMessage').value = '';
+  document.getElementById('broadcastSubject').value = '';
+  document.getElementById('broadcastStatus').textContent = '';
+  updateCharCount();
 }
 
 checkAuth();
