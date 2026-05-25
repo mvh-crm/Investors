@@ -1490,7 +1490,7 @@ async function extractCard() {
       'Content-Type': 'application/json',
       'x-api-key': key,
       'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true'
+      'anthropic-dangerous-direct-browser-access': 'true'
     };
     // Try direct first, fall back to CORS proxy for Safari
     let response;
