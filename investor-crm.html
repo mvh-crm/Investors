@@ -523,14 +523,18 @@
       <!-- RECIPIENT SELECTOR -->
       <div class="dash-section">
         <div class="dash-section-title">1. Select Recipients</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-          <label class="deal-check selected" onclick="toggleTypeFilter(this,'Investor')"><input type="checkbox" value="Investor" checked> Investors</label>
-          <label class="deal-check selected" onclick="toggleTypeFilter(this,'Sponsor')"><input type="checkbox" value="Sponsor" checked> Sponsors</label>
-          <label class="deal-check selected" onclick="toggleTypeFilter(this,'Operator')"><input type="checkbox" value="Operator" checked> Operators</label>
-          <label class="deal-check selected" onclick="toggleTypeFilter(this,'')"><input type="checkbox" value="" checked> Unassigned</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+          <div class="deal-check selected" id="tf-Investor" onclick="toggleTypeFilter('Investor')"> Investors</div>
+          <div class="deal-check selected" id="tf-Sponsor" onclick="toggleTypeFilter('Sponsor')"> Sponsors</div>
+          <div class="deal-check selected" id="tf-Operator" onclick="toggleTypeFilter('Operator')"> Operators</div>
+          <div class="deal-check selected" id="tf-unassigned" onclick="toggleTypeFilter('')"> Unassigned</div>
+          <div style="display:flex;gap:6px;margin-left:8px;">
+            <button class="btn btn-outline btn-sm" onclick="selectAllRecipients()">Select All</button>
+            <button class="btn btn-outline btn-sm" onclick="deselectAllRecipients()">Deselect All</button>
+          </div>
         </div>
         <div id="recipientSummary" style="font-size:13px;color:var(--text2);margin-bottom:12px;"></div>
-        <div id="recipientList" style="max-height:200px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;"></div>
+        <div id="recipientList" style="max-height:260px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;"></div>
       </div>
 
       <!-- CHANNEL SELECTOR -->
@@ -1762,9 +1766,12 @@ function checkAuth() {
 let broadcastChannel = 'sms';
 let broadcastTypeFilters = ['Investor','Sponsor','Operator',''];
 let messageTemplates = [];
+let selectedRecipientIds = new Set();
 
 function initBroadcast() {
   messageTemplates = JSON.parse(localStorage.getItem('icrm_templates') || '[]');
+  // Select all by default
+  selectedRecipientIds = new Set(investors.map(i => i.id));
   renderRecipients();
   renderTemplates();
   updateSubjectVisibility();
@@ -1772,37 +1779,80 @@ function initBroadcast() {
   document.getElementById('broadcastSubject').style.display = 'none';
 }
 
-function toggleTypeFilter(el, type) {
+function toggleTypeFilter(type) {
+  const elId = type === '' ? 'tf-unassigned' : 'tf-' + type;
+  const el = document.getElementById(elId);
+  const isCurrentlySelected = el.classList.contains('selected');
   el.classList.toggle('selected');
-  if (broadcastTypeFilters.includes(type)) {
-    broadcastTypeFilters = broadcastTypeFilters.filter(t => t !== type);
-  } else {
-    broadcastTypeFilters.push(type);
-  }
+  const nowSelected = !isCurrentlySelected;
+  investors.filter(inv => (inv.personType || '') === type).forEach(inv => {
+    if (nowSelected) selectedRecipientIds.add(inv.id);
+    else selectedRecipientIds.delete(inv.id);
+  });
+  if (!nowSelected) broadcastTypeFilters = broadcastTypeFilters.filter(t => t !== type);
+  else if (!broadcastTypeFilters.includes(type)) broadcastTypeFilters.push(type);
   renderRecipients();
 }
 
+function selectAllRecipients() {
+  selectedRecipientIds = new Set(investors.map(i => i.id));
+  broadcastTypeFilters = ['Investor','Sponsor','Operator',''];
+  ['tf-Investor','tf-Sponsor','tf-Operator','tf-unassigned'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('selected');
+  });
+  renderRecipients();
+}
+
+function deselectAllRecipients() {
+  selectedRecipientIds = new Set();
+  broadcastTypeFilters = [];
+  ['tf-Investor','tf-Sponsor','tf-Operator','tf-unassigned'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('selected');
+  });
+  renderRecipients();
+}
+
+function toggleIndividualRecipient(id) {
+  if (selectedRecipientIds.has(id)) selectedRecipientIds.delete(id);
+  else selectedRecipientIds.add(id);
+  renderRecipientSummary();
+  // Update checkbox visual
+  const cb = document.getElementById('rcb-' + id);
+  if (cb) cb.checked = selectedRecipientIds.has(id);
+  const row = document.getElementById('rrow-' + id);
+  if (row) row.style.opacity = selectedRecipientIds.has(id) ? '1' : '0.4';
+}
+
 function getBroadcastRecipients() {
-  return investors.filter(inv => broadcastTypeFilters.includes(inv.personType || ''));
+  return investors.filter(inv => selectedRecipientIds.has(inv.id));
+}
+
+function renderRecipientSummary() {
+  const list = getBroadcastRecipients();
+  const smsCount = list.filter(i => i.cell).length;
+  const emailCount = list.filter(i => i.email).length;
+  document.getElementById('recipientSummary').innerHTML = `<strong style="color:var(--text)">${list.length}</strong> recipients selected &nbsp;·&nbsp; <span style="color:var(--green)">${smsCount} have phone numbers</span> &nbsp;·&nbsp; <span style="color:var(--blue)">${emailCount} have emails</span>`;
 }
 
 function renderRecipients() {
-  const list = getBroadcastRecipients();
   const el = document.getElementById('recipientList');
-  const summary = document.getElementById('recipientSummary');
-  const smsCount = list.filter(i => i.cell).length;
-  const emailCount = list.filter(i => i.email).length;
-  summary.innerHTML = `<strong style="color:var(--text)">${list.length}</strong> recipients selected &nbsp;·&nbsp; <span style="color:var(--green)">${smsCount} have phone numbers</span> &nbsp;·&nbsp; <span style="color:var(--blue)">${emailCount} have emails</span>`;
-  if (list.length === 0) {
-    el.innerHTML = '<div style="color:var(--text3);font-size:13px;">No recipients match your selection.</div>';
+  if (investors.length === 0) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;">No investors found.</div>';
+    renderRecipientSummary();
     return;
   }
-  el.innerHTML = list.map(inv => `
-    <div class="recipient-item">
+  el.innerHTML = investors.map(inv => {
+    const checked = selectedRecipientIds.has(inv.id);
+    return `<div class="recipient-item" id="rrow-${inv.id}" style="opacity:${checked ? '1' : '0.4'};cursor:pointer;" onclick="toggleIndividualRecipient('${inv.id}')">
+      <input type="checkbox" id="rcb-${inv.id}" ${checked ? 'checked' : ''} onclick="event.stopPropagation();toggleIndividualRecipient('${inv.id}')" style="cursor:pointer;accent-color:var(--gold);">
       <div class="ri-name">${inv.firstName} ${inv.lastName}</div>
       <span class="badge badge-${(inv.personType||'investor').toLowerCase()}" style="font-size:10px;padding:2px 7px;">${inv.personType||'—'}</span>
-      <div class="ri-contact">${inv.cell || inv.email || 'No contact info'}</div>
-    </div>`).join('');
+      <div class="ri-contact">${inv.cell ? '📱 '+inv.cell : inv.email ? '✉️ '+inv.email : '<span style="color:var(--text3)">No contact info</span>'}</div>
+    </div>`;
+  }).join('');
+  renderRecipientSummary();
 }
 
 function selectChannel(ch) {
