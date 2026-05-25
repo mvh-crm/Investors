@@ -1313,7 +1313,7 @@ function clearForm() {
     const el = document.getElementById('f-'+f);
     if (el) el.value = '';
   });
-  document.querySelectorAll('.deal-check').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('#investorModal .deal-check').forEach(c => c.classList.remove('selected'));
 }
 
 function fillForm(inv) {
@@ -1330,7 +1330,7 @@ function fillForm(inv) {
   set('targetReturn',inv.targetReturn); set('timeHorizon',inv.timeHorizon);
   set('minInvest',inv.minInvest); set('maxInvest',inv.maxInvest);
   set('passiveActive',inv.passiveActive); set('goalNotes',inv.goalNotes);
-  document.querySelectorAll('.deal-check').forEach(c => {
+  document.querySelectorAll('#investorModal .deal-check').forEach(c => {
     const val = c.querySelector('input').value;
     c.classList.toggle('selected', (inv.dealTypes||[]).includes(val));
   });
