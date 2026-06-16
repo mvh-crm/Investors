@@ -73,6 +73,24 @@
   /* PAGES */
   .page { display: none; padding: 32px; }
   .page.active { display: block; }
+  /* Home menu (replaces persistent sidebar) */
+  .sidebar { display: none !important; }
+  .nav-toggle-btn, .app.nav-collapsed .nav-toggle-btn { display: none !important; }
+  #page-home { padding: 0; }
+  .home-hero { text-align: center; padding: 46px 24px 6px; }
+  .home-hero h1 { font-family: 'Playfair Display', serif; font-size: 30px; color: var(--gold); letter-spacing: .5px; }
+  .home-hero p { font-size: 12.5px; color: var(--text3); margin-top: 6px; letter-spacing: .5px; }
+  .home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px;
+               padding: 28px 20px 40px; max-width: 760px; margin: 0 auto; }
+  .home-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px 18px;
+               cursor: pointer; transition: all .15s; display: flex; flex-direction: column; gap: 7px; text-align: left; }
+  .home-card:hover, .home-card:active { border-color: var(--gold); background: var(--gold-dim); transform: translateY(-1px); }
+  .home-card .hc-icon { font-size: 28px; line-height: 1; }
+  .home-card .hc-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .home-card .hc-sub { font-size: 12px; color: var(--text3); }
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border);
+              color: var(--text2); border-radius: 10px; padding: 9px 15px; font-size: 13px; cursor: pointer; margin-bottom: 20px; }
+  .back-btn:hover { color: var(--gold); border-color: var(--gold); }
 
   /* PAGE HEADER */
   .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
@@ -324,8 +342,42 @@
   <!-- MAIN -->
   <div class="main">
 
+    <!-- HOME MENU -->
+    <div id="page-home" class="page active">
+      <div class="home-hero">
+        <h1>MVH-CRM</h1>
+        <p>PRIVATE CAPITAL CRM</p>
+      </div>
+      <div class="home-grid">
+        <div class="home-card" onclick="showPage('dashboard')">
+          <span class="hc-icon">⚡</span><span class="hc-title">Dashboard</span>
+          <span class="hc-sub">Overview &amp; pipeline</span>
+        </div>
+        <div class="home-card" onclick="showPage('investors')">
+          <span class="hc-icon">👥</span><span class="hc-title">Investors</span>
+          <span class="hc-sub" id="homeInvSub">—</span>
+        </div>
+        <div class="home-card" onclick="showPage('today')">
+          <span class="hc-icon">📋</span><span class="hc-title">Today's Reminders</span>
+          <span class="hc-sub" id="homeTodaySub">—</span>
+        </div>
+        <div class="home-card" onclick="showPage('schedule')">
+          <span class="hc-icon">🗓️</span><span class="hc-title">30-Day Schedule</span>
+          <span class="hc-sub">Outreach plan</span>
+        </div>
+        <div class="home-card" onclick="showPage('broadcast')">
+          <span class="hc-icon">📣</span><span class="hc-title">Broadcast</span>
+          <span class="hc-sub">Mass message</span>
+        </div>
+        <div class="home-card" onclick="showPage('settings')">
+          <span class="hc-icon">⚙️</span><span class="hc-title">Settings</span>
+          <span class="hc-sub">Config, export &amp; data</span>
+        </div>
+      </div>
+    </div>
+
     <!-- DASHBOARD -->
-    <div id="page-dashboard" class="page active">
+    <div id="page-dashboard" class="page">
       <div class="page-header">
         <div>
           <h2>Dashboard</h2>
@@ -1114,6 +1166,7 @@ function renderAll() {
   renderSchedule();
   const todayCount = getTodayInvestors().length;
   document.getElementById('todayCount').textContent = todayCount;
+  renderHome();
 }
 
 function renderStats() {
@@ -1666,13 +1719,33 @@ function toggleNav() {
 }
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  event.currentTarget.classList.add('active');
+  const el = document.getElementById('page-'+page);
+  if (el) el.classList.add('active');
+  const main = document.querySelector('.main'); if (main) main.scrollTop = 0;
+  if (page==='home') renderHome();
   if (page==='today') renderToday();
   if (page==='schedule') renderSchedule();
   if (page==='dashboard') renderDashboard();
   if (page==='broadcast') initBroadcast();
+}
+
+// Home menu (landing page) — live counts + one-time back-button injection
+function renderHome() {
+  const n = (investors||[]).length;
+  const invEl = document.getElementById('homeInvSub');
+  if (invEl) invEl.textContent = n + (n===1 ? ' contact' : ' contacts');
+  const tc = document.getElementById('todayCount');
+  const tEl = document.getElementById('homeTodaySub');
+  if (tEl) tEl.textContent = ((tc && tc.textContent && tc.textContent !== '—') ? tc.textContent : '0') + ' to reach out';
+}
+function setupBackButtons() {
+  document.querySelectorAll('.page').forEach(p => {
+    if (p.id === 'page-home' || p.querySelector(':scope > .back-btn')) return;
+    const b = document.createElement('button');
+    b.className = 'back-btn'; b.type = 'button'; b.textContent = '← Menu';
+    b.onclick = () => showPage('home');
+    p.insertBefore(b, p.firstChild);
+  });
 }
 
 function switchTab(el, targetId) {
@@ -1990,6 +2063,7 @@ function clearBroadcast() {
   updateCharCount();
 }
 
+setupBackButtons();
 checkAuth();
 
 // Register service worker (relative scope so it works under /Investors/) for installable PWA + offline.
