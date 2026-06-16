@@ -1,4 +1,4 @@
-const CACHE = 'mvh-crm-v4';
+const CACHE = 'mvh-crm-v5';
 const ASSETS = [
   './investor-crm.html',
   './manifest.json',

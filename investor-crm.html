@@ -39,8 +39,18 @@
 
   /* LAYOUT */
   .app { display: flex; height: 100vh; overflow: hidden; }
-  .sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: width .2s ease; overflow: hidden; }
   .main { flex: 1; overflow-y: auto; background: var(--bg); }
+  /* Collapsible sidebar */
+  .app.nav-collapsed .sidebar { width: 0; border-right: 0; }
+  .nav-toggle-btn { position: fixed; top: 12px; left: 12px; z-index: 60; width: 40px; height: 40px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--gold); border-radius: 9px;
+    font-size: 18px; line-height: 1; cursor: pointer; display: none; align-items: center; justify-content: center; }
+  .nav-toggle-btn:hover { background: var(--surface2); }
+  .app.nav-collapsed .nav-toggle-btn { display: flex; }
+  .sb-collapse { float: right; background: none; border: 1px solid var(--border); color: var(--text3);
+    width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 16px; line-height: 1; }
+  .sb-collapse:hover { color: var(--gold); border-color: var(--gold); }
 
   /* SIDEBAR */
   .sidebar-logo { padding: 28px 20px 20px; border-bottom: 1px solid var(--border); }
@@ -272,9 +282,11 @@
 </div>
 
 <div class="app" id="mainApp" style="display:none;">
+  <button class="nav-toggle-btn" onclick="toggleNav()" title="Show menu" aria-label="Show menu">☰</button>
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sidebar-logo">
+      <button class="sb-collapse" onclick="toggleNav()" title="Collapse menu" aria-label="Collapse menu">‹</button>
       <h1>MVH-CRM</h1>
       <p>Private Capital CRM</p>
     </div>
@@ -962,6 +974,9 @@ let currentDetailId = null;
 
 // ==================== INIT ====================
 function init() {
+  // Restore sidebar collapse preference (default collapsed on small/phone screens)
+  { const _app = document.querySelector('.app'); const _p = localStorage.getItem('mvh_nav_collapsed');
+    if (_app && (_p === '1' || (_p === null && window.innerWidth < 768))) _app.classList.add('nav-collapsed'); }
   // One-time purge: contacts retired from this public site (moved to private CRM).
   if (!localStorage.getItem('icrm_purged_2026_06')) {
     localStorage.removeItem('icrm_investors');
@@ -1318,7 +1333,7 @@ function saveInvestor() {
   const firstName = document.getElementById('f-firstName').value.trim();
   const lastName = document.getElementById('f-lastName').value.trim();
   if (!firstName || !lastName) { showToast('First and last name are required','error'); return; }
-  const dealTypes = [...document.querySelectorAll('.deal-check.selected')].map(c=>c.querySelector('input').value);
+  const dealTypes = [...document.querySelectorAll('#investorModal .deal-check.selected')].map(c=>c.querySelector('input')).filter(Boolean).map(i=>i.value);
   const data = {
     firstName, lastName,
     company: document.getElementById('f-company').value,
@@ -1645,6 +1660,10 @@ function checkDailyReminder() {
 }
 
 // ==================== UTILS ====================
+function toggleNav() {
+  const collapsed = document.querySelector('.app').classList.toggle('nav-collapsed');
+  localStorage.setItem('mvh_nav_collapsed', collapsed ? '1' : '0');
+}
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
