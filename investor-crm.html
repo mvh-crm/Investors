@@ -952,6 +952,13 @@ let currentDetailId = null;
 
 // ==================== INIT ====================
 function init() {
+  // One-time purge: contacts retired from this public site (moved to private CRM).
+  if (!localStorage.getItem('icrm_purged_2026_06')) {
+    localStorage.removeItem('icrm_investors');
+    localStorage.removeItem('icrm_schedule');
+    localStorage.removeItem('icrm_full_seed');
+    localStorage.setItem('icrm_purged_2026_06', '1');
+  }
   loadData();
   if (investors.length === 0) seedData();
   // Force reseed if IDs are duplicated (bug fix)
@@ -1006,46 +1013,7 @@ function saveSettings() {
 
 // ==================== SEED DATA ====================
 function seedData() {
-  const raw = [
-    {firstName:'Orlando',lastName:'Dorsey',company:'Business Valuation Service',email:'odorsey@businessvaluationservicellc.com',cell:'202-899-0023',fax:'813-847-5895',knownSince:'2025',howKnown:'3 Day',relType:'Business/Friend',interestArea:'MF Investor',notes:'Business',consent:'Y',personType:'Investor'},
-    {firstName:'Nilton',lastName:'Martins',company:'Expert Funds',email:'nilton@expert-funds.com',cell:'239-271-9332',knownSince:'2025',howKnown:'3 Day',relType:'Business/Friend',interestArea:'MF Investor',notes:'Business',consent:'Y',personType:'Investor'},
-    {firstName:'Francisco',lastName:'Fernandez',company:'Fast Action Realty',email:'Realtorfranky@gmail.com',cell:'239-253-0442',knownSince:'2025',howKnown:'3 Day',relType:'Business/Friend',interestArea:'MF Investor',notes:'Business',consent:'Y',personType:'Investor'},
-    {firstName:'Nick',lastName:'Barron',city:'Southern California',cell:'714-683-8617',knownSince:'2026',howKnown:'Peak',relType:'MF Owner',personType:'Investor'},
-    {firstName:'Amber',lastName:'Booher',company:'Novella Equity',email:'amber@novellaequity.com',cell:'602-587-8041',city:'Phoenix',state:'Arizona',knownSince:'2026',howKnown:'Peak',relType:'MF Owner',personType:'Investor'},
-    {firstName:'Floyd',lastName:'Brown',cell:'470-774-8446',city:'Atlanta',state:'GA',knownSince:'2026',howKnown:'Peak',relType:'MF Owner',personType:'Investor'},
-    {firstName:'Laura',lastName:'Charles',email:'lauracharles592@gmail.com',cell:'203-936-7607',city:'Oklahoma City',state:'Oklahoma',knownSince:'2026',howKnown:'Peak',relType:'MF Owner',personType:'Investor'},
-    {firstName:'John',lastName:'Cummings',cell:'541-556-1512',city:'Lake Mary',state:'FL',knownSince:'2026',howKnown:'Peak',personType:'Investor'},
-    {firstName:'Maya',lastName:'Cummings',cell:'541-556-1511',city:'Lake Mary',state:'FL',knownSince:'2026',howKnown:'Peak',personType:'Investor'},
-    {firstName:'Mike',lastName:'Desrosiers',company:'Growth Capital Group',email:'mike@growthcaptoday.com',cell:'925-984-1841',city:'Walnut Creek',state:'CA',knownSince:'2026',howKnown:'Peak',relType:'MF Sponsor',personType:'Sponsor'},
-    {firstName:'Eddie',lastName:'Esparza',company:'Diversified Dep',email:'eddie@diversifieddep.com',cell:'312-248-4030',knownSince:'2026',howKnown:'Peak',relType:'MF Sponsor',personType:'Sponsor'},
-    {firstName:'Tina',lastName:'Gantz',company:'Trifecta Equity',email:'tgantz@trifectaequitypartners.com',cell:'703-582-2555',knownSince:'2026',howKnown:'Peak',personType:'Investor'},
-    {firstName:'Gerard',lastName:'(Unknown)',cell:'941-224-07740',knownSince:'2025',howKnown:'3 Day',personType:'Investor'},
-    {firstName:'Aaron',lastName:'Gray',company:'2Tower Capital',cell:'412-709-7404',city:'Rochester',state:'MI',knownSince:'2025',howKnown:'3 Day',relType:'MF Mentor',personType:'Investor'},
-    {firstName:'John',lastName:'Hoyt',email:'john.hoyt.re@gmail.com',cell:'559-580-4837',city:'Washington D.C.',knownSince:'2026',howKnown:'Peak',personType:'Investor'},
-    {firstName:'Michael',lastName:'Flint',cell:'678-427-7602',city:'Miami',state:'FL',knownSince:'2026',howKnown:'Peak',personType:'Investor'},
-    {firstName:'Mark',lastName:'Osuna',company:'Good Life Mindset',email:'goodlifemindsetmo@gmail.com',cell:'951-323-7713',state:'CA',knownSince:'2026',howKnown:'Peak',relType:'MF Owner',personType:'Investor'},
-    {firstName:'Corey',lastName:'Petrod',company:'2Tower Capital',cell:'586-242-9338',city:'Rochester',state:'MI',knownSince:'2025',howKnown:'3 Day',relType:'MF Mentor',personType:'Investor'},
-    {firstName:'Nathalia',lastName:'Porto',company:'Luna Homes Tampa Bay',email:'nporto@lunahomestampa.com',cell:'813-400-0940',city:'Tampa',state:'FL',knownSince:'2026',howKnown:'Peak',relType:'MF/Broker',personType:'Operator'},
-    {firstName:'Andy',lastName:'Vasquez',company:'AV Venture Holdings',email:'avventureholdingsllc@gmail.com',cell:'951-316-8132',state:'California',knownSince:'2026',howKnown:'Peak',relType:'MF Owner',personType:'Investor'},
-    {firstName:'Beth',lastName:'Bungay',company:'CashCow Investments',email:'BethB@CashCowInv.com',cell:'760-802-2423',state:'California',knownSince:'2026',howKnown:'Peak',relType:'MF Sponsor',personType:'Sponsor'},
-    {firstName:'Michael',lastName:'Rebelo',company:'Ever Forward Capital',email:'mrebelo@everforwardcapitalpartners.com',cell:'774-264-3392',state:'Massachusetts',knownSince:'2026',howKnown:'Peak',relType:'MF Sponsor',personType:'Sponsor'},
-    {firstName:'Jared',lastName:'MacLiver',cell:'480-514-2744',city:'Phoenix',state:'AZ',knownSince:'2026',howKnown:'Peak',relType:'MF RV Park Owner',personType:'Operator'},
-    {firstName:'Tony',lastName:'Pray',company:'Perfect Dream Realty',email:'Tony@perfectdreamrealty.com',cell:'863-904-7263',city:'Lakeland',state:'FL',knownSince:'2026',howKnown:'Peak',relType:'MF Realtor Flipper',personType:'Operator'},
-    {firstName:'Janice',lastName:'Pray',company:'Janton Capital',cell:'813-843-4828',city:'Lakeland',state:'FL',knownSince:'2026',howKnown:'Peak',relType:'MF Owner',personType:'Investor'},
-    {firstName:'Pashant',lastName:'Pradhy',company:'DSP',city:'Chicago',knownSince:'2022',howKnown:'DSP',relType:'Business',interestArea:'Investor',personType:'Investor'},
-    {firstName:'Caleb',lastName:'King',company:'DSP',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Jacob',lastName:'Barzivand',company:'Insurance Broker/Paramount',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Eddie',lastName:'Pacheco',company:'DSP',city:'Orlando',state:'FL',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Tom',lastName:'Batdorf',company:'DSP',city:'Orlando',state:'FL',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Sam',lastName:'Luu',company:'RVA Deliveries DSP',city:'Richmond',state:'VA',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Faz',lastName:'Ali',company:'DSP',state:'NJ',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Juan',lastName:'De Leon',company:'NJD Delivery DSP',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor',spouseName:'Nancy De Leon'},
-    {firstName:'Trevor',lastName:'Feller',company:'Inovative Deliveries DSP',city:'Salt Lake City',state:'UT',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Jose',lastName:'Restrepo',company:'Last Mile DSP',city:'Miami',state:'FL',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Jarod',lastName:'Hartman',company:'Fireteam Logistics DSP',state:'Ohio',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Megel',lastName:'Brown',company:'Shipmates DSP',state:'LA',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-    {firstName:'Scott',lastName:'Jones',company:'Sparkle Logistics DSP',city:'Fayetteville',state:'AR',knownSince:'2026',howKnown:'Aegis GC',relType:'Investor',personType:'Investor'},
-  ];
+  const raw = [];
   investors = raw.map((r,i) => ({
     id: 'inv_' + (Date.now() + i * 137) + '_' + i + '_' + Math.random().toString(36).slice(2,7),
     ...r,
