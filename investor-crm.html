@@ -508,6 +508,12 @@
       </div>
 
       <div class="settings-card">
+        <h3>⤓ Export / Backup</h3>
+        <p>Download all records as a JSON file — use this to import them into the private MVH CRM.</p>
+        <button class="btn btn-gold" onclick="exportData()">⤓ Export JSON</button>
+      </div>
+
+      <div class="settings-card">
         <h3>⚠️ Danger Zone</h3>
         <p>Permanently delete all investor data. This cannot be undone.</p>
         <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
@@ -1678,6 +1684,18 @@ function formatNum(n) {
   if (num >= 1000000) return (num/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
   if (num >= 1000) return (num/1000).toFixed(0) + 'K';
   return num.toLocaleString();
+}
+
+function exportData() {
+  const data = JSON.stringify(investors, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().split('T')[0];
+  a.href = url; a.download = 'investor-crm-export-' + stamp + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Exported ' + investors.length + ' record' + (investors.length === 1 ? '' : 's'), 'success');
 }
 
 function clearAllData() {
